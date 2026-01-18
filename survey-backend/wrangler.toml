@@ -2,6 +2,6 @@ name = "survey-backend"
 main = "worker.js"
 compatibility_date = "2025-01-01"
 
-[[r2_buckets]]
-binding = "BUCKET"
-bucket_name = "survey-submissions"
+[[kv_namespaces]]
+binding = "SURVEY_KV"
+id = "PASTE_NAMESPACE_ID_HERE"

@@ -2,7 +2,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // CORS support
+    // CORS
     if (request.method === "OPTIONS") {
       return new Response(null, {
         headers: {
@@ -13,50 +13,37 @@ export default {
       });
     }
 
-    // API: Submit survey
+    // Submit survey
     if (url.pathname === "/api/submit" && request.method === "POST") {
       const data = await request.json();
+      const key = `customer_${Date.now()}`;
 
-      const timestamp = new Date().toISOString();
-      const filename = `customer_${timestamp}.json`;
+      await env.SURVEY_KV.put(key, JSON.stringify(data));
 
-      await env.BUCKET.put(
-        filename,
-        JSON.stringify(data, null, 2)
-      );
-
-      return new Response(
-        JSON.stringify({ success: true }),
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
         }
-      );
+      });
     }
 
-    // API: Get all responses
+    // Get all responses
     if (url.pathname === "/api/responses" && request.method === "GET") {
-      const list = await env.BUCKET.list();
+      const list = await env.SURVEY_KV.list();
       const results = [];
 
-      for (const obj of list.objects) {
-        const file = await env.BUCKET.get(obj.key);
-        const json = await file.json();
-        json._file = obj.key;
-        results.push(json);
+      for (const key of list.keys) {
+        const value = await env.SURVEY_KV.get(key.name);
+        results.push(JSON.parse(value));
       }
 
-      return new Response(
-        JSON.stringify(results),
-        {
-          headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "*"
-          }
+      return new Response(JSON.stringify(results), {
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*"
         }
-      );
+      });
     }
 
     return new Response("Not Found", { status: 404 });
